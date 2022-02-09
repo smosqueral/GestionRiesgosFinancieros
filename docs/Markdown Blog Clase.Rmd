@@ -447,7 +447,7 @@ EstDesRetornos <- matrix(,8,1)
   
   rownames(EstDesRetornos) <- c("Min","Mean","Max","Variance","Sds","Skewness","Kurtosis","Jarque Bera")
 
-colnames(EstDesRetornos) <- c("SP500")
+colnames(EstDesRetornos) <- c("Retornos SP500")
 
 EstDesRetornos %>%
     kable(digits=4) %>%
@@ -457,8 +457,8 @@ EstDesRetornos %>%
 
 
 ```{r}
-hist(sp, freq = F)
-curve(dnorm(x, mean(sp), sd(sp)),
+hist(ret, freq = F)
+curve(dnorm(x, mean(ret), sd(ret)),
       col = "blue", lwd = 3, add = TRUE)
 ```
 
@@ -543,7 +543,7 @@ Podemos utilizar esta función para los precios en niveles o para los retornos.
 auto.arima(sp, allowdrift = TRUE, allowmean = TRUE)
 ```
 ```{r}
-modelo.precios = arima(sp, order=c(4,1,2))
+modelo.precios = arima(sp, order=c(2,1,4))
 coeftest(modelo.precios)
 
 ```
@@ -555,7 +555,7 @@ auto.arima(ret)
 ```
 
 ```{r}
-modelo.retornos = arima(ret, order=c(2,0,2))
+modelo.retornos = arima(ret, order=c(2,0,4))
 coeftest(modelo.retornos)
 
 ```
