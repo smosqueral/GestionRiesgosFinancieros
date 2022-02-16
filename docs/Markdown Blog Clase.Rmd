@@ -250,21 +250,16 @@ plot(sm[,12], main ="Tbill 13 weeks")
 Calculemos las estadísticas descriptivas de los precios:
 
 ```{r warning=FALSE}
+estadisticas<-c("min","mean","max","var","sd","kurtosis","skewness")
+n <- length(estadisticas)
 m <- ncol(sm)
-EstDesPrecios <- matrix(,7,m)
-
-for (i in 1:m){
-  EstDesPrecios[1,i]=colMins(sm[,i])
-  EstDesPrecios[2,i]=colMeans(sm[,i])
-  EstDesPrecios[3,i]=colMaxs(sm[,i])
-  EstDesPrecios[4,i]=colVars(sm[,i])
-  EstDesPrecios[5,i]=colSds(sm[,i])
-  EstDesPrecios[6,i]=colSkewness(sm[,i])
-  EstDesPrecios[7,i]=colKurtosis(sm[,i])
+EstDesPrecios <- matrix(,nrow=n,ncol=m,dimnames = list(estadisticas,c("SP500","Apple","Microsoft","Amazon","AlphabetA","Tesla","AlphabetC","Meta","NVIDIA","BerkshireHathaway","UnitedHealth","Tbill")))
+                                                
+for (j in 1:n){
+  for(i in 1:m){
+      EstDesPrecios[j,i]=colStats(sm[,i], FUN = estadisticas[j])
+  }
 }
-
-rownames(EstDesPrecios) <- c("Min","Mean","Max","Variance","Sds","Skewness","Kurtosis")
-colnames(EstDesPrecios) <- c("SP500","Apple","Microsoft","Amazon","AlphabetA","Tesla","AlphabetC","Meta","NVIDIA","BerkshireHathaway","UnitedHealth","Tbill")
 
 EstDesPrecios %>%
   kable(digits=4) %>%
@@ -303,25 +298,18 @@ plot(ret[,12], main ="Tbill 13 weeks")
 Calculemos ahora las estadísticas descriptivas de los retornos:
 
 ```{r warning=FALSE}
+estadisticas<-c("min","mean","max","var","sd","kurtosis","skewness")
+n <- length(estadisticas)
 m <- ncol(ret)
-EstDesRetornos <- matrix(,8,12)
-
-for (i in 1:m){
-  EstDesRetornos[1,i]=colMins(ret[,i])
-  EstDesRetornos[2,i]=colMeans(ret[,i])
-  EstDesRetornos[3,i]=colMaxs(ret[,i])
-  EstDesRetornos[4,i]=colVars(ret[,i])
-  EstDesRetornos[5,i]=colSds(ret[,i])
-  EstDesRetornos[6,i]=colSkewness(ret[,i])
-  EstDesRetornos[7,i]=colKurtosis(ret[,i])
-  EstDesRetornos[8,i]=jarque.bera.test(ret[,i])$p.value
+EstDesRet <- matrix(,nrow=n,ncol=m,dimnames = list(estadisticas,c("SP500","Apple","Microsoft","Amazon","AlphabetA","Tesla","AlphabetC","Meta","NVIDIA","BerkshireHathaway","UnitedHealth","Tbill")))
+                                                
+for (j in 1:n){
+  for(i in 1:m){
+      EstDesRet[j,i]=colStats(ret[,i], FUN = estadisticas[j])
+  }
 }
 
-rownames(EstDesRetornos) <- c("Min","Mean","Max","Variance","Sds","Skewness","Kurtosis","Jarque Bera")
-
-colnames(EstDesRetornos) <- c("SP500","Apple","Microsoft","Amazon","AlphabetA","Tesla","AlphabetC","Meta","NVIDIA","BerkshireHathaway","UnitedHealth","Tbill")
-
-EstDesRetornos %>%
+EstDesRet %>%
   kable(digits=4) %>%
   kable_styling("striped", full_width = F, position = "center")
 
@@ -341,14 +329,14 @@ $\mu_{j}=r_{0}+\beta_{j}(\mu_{M}-r_{0})$ para $j=1,2, ...,n$
 Ahora procedemos a calcular los betas de las 10 acciones del SP500 con las que estamos trabajando:
 
 ```{r}
-X<-as.matrix(ret[,1]-ret[,12])
+X<-as.matrix(ret$GSPC.Adjusted-sm$IRX.Adjusted)
 YY<-ret[,2:11]
 t<-dim(YY)[1]
 n<-dim(YY)[2]
 Y<-matrix(0,t,n)
 
 for (i in 1:n){
-  Y[,i]<-YY[,i]-ret[,12]}
+  Y[,i]<-YY[,i]-sm[,12]}
 
 Resultados <-matrix(0,n,4)
 
@@ -360,8 +348,6 @@ for (i in 1:n){
 
 rownames(Resultados) <- c("Beta Apple","Beta Microsoft","Beta Amazon","Beta Alphabet A","Beta Tesla","Beta AlphabetC","Beta Meta","Beta NVIDIA","Beta Berkshire Hathaway","Beta UnitedHealth")
 colnames(Resultados) <- c("Estimate","Std.Error","t-value","p-value")
-
-c("SP500","Apple","Microsoft","Amazon","AlphabetA","Tesla","AlphabetC","Meta","NVIDIA","BerkshireHathaway","UnitedHealth","Tbill")
 
 Resultados %>%
   kable(digits=4) %>%
@@ -468,7 +454,7 @@ Procedemos a indentificar un modelo de la media condicional a los datos. Para es
 
 ```{r}
 par(mfrow=c(2,1))
-acf(ret, lag=24) 
+Acf(ret, lag=24) 
 pacf(ret, lag=24) 
 ```
 
@@ -572,7 +558,7 @@ res.retornos <- residuals(modelo.retornos)
 
 ```{r}
 par(mfrow=c(2,1)) 
-acf(res.precios, lag=12) 
+Acf(res.precios, lag=12) 
 pacf(res.precios,lag=12)
 
 Box.test(res.precios,lag=12,type="Box-Pierce") #H0: no autocorrelación
@@ -583,7 +569,7 @@ Box.test(res.precios,lag=12,type="Ljung") #H0: no autocorrelación
 
 ```{r}
 par(mfrow=c(2,1)) 
-acf(res.precios^2, lag=12) 
+Acf(res.precios^2, lag=12) 
 pacf(res.precios^2,lag=12)
 
 Box.test(res.precios^2,lag=12,type="Box-Pierce") #H0: no autocorrelación
@@ -594,7 +580,7 @@ Box.test(res.precios^2,lag=12,type="Ljung") #H0: no autocorrelación
 
 ```{r}
 par(mfrow=c(2,1)) 
-acf(res.retornos, lag=12) 
+Acf(res.retornos, lag=12) 
 pacf(res.retornos,lag=12)
 
 Box.test(res.retornos,lag=12,type="Box-Pierce") #H0: no autocorrelación
@@ -605,7 +591,7 @@ Box.test(res.retornos,lag=12,type="Ljung") #H0: no autocorrelación
 
 ```{r}
 par(mfrow=c(2,1)) 
-acf(res.retornos^2, lag=12) 
+Acf(res.retornos^2, lag=12) 
 pacf(res.retornos^2,lag=12)
 
 Box.test(res.retornos^2,lag=12,type="Box-Pierce") #H0: no autocorrelación
@@ -743,7 +729,7 @@ Box.test(res^2,lag=12,type="Box-Pierce")
 Box.test(res^2,lag=12,type="Ljung")
 
 par(mfrow=c(2,1))
-acf(res^2, lag=24) 
+Acf(res^2, lag=24) 
 pacf(res^2, lag=24)
 ```
 
@@ -772,7 +758,7 @@ Box.test(res.est^2,lag=12,type="Box-Pierce")
 Box.test(res.est^2,lag=12,type="Ljung")
 
 par(mfrow=c(2,1))
-acf(res.est^2, lag=24) 
+Acf(res.est^2, lag=24) 
 pacf(res.est^2, lag=24)
 ```
 
