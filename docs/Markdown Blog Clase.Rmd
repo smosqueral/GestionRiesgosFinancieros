@@ -329,14 +329,20 @@ $\mu_{j}=r_{0}+\beta_{j}(\mu_{M}-r_{0})$ para $j=1,2, ...,n$
 Ahora procedemos a calcular los betas de las 10 acciones del SP500 con las que estamos trabajando:
 
 ```{r}
-X<-as.matrix(ret$GSPC.Adjusted-sm$IRX.Adjusted)
+rf <- sm$IRX.Adjusted
+rf <-(1+rf/2)^(1/180)-1  #La tasa se encuentra en NASV y se pasa a diaria
+rf <- log(1+rf)*100       #La tasa diaria se convierte a continua 
+
+rm <- ret$GSPC.Adjusted
+
+X<-as.matrix(rm-rf)
 YY<-ret[,2:11]
 t<-dim(YY)[1]
 n<-dim(YY)[2]
 Y<-matrix(0,t,n)
 
 for (i in 1:n){
-  Y[,i]<-YY[,i]-sm[,12]}
+  Y[,i]<-YY[,i]-rf}
 
 Resultados <-matrix(0,n,4)
 
@@ -603,38 +609,16 @@ Box.test(res.retornos^2,lag=12,type="Ljung") #H0: no autocorrelación
 **Precios**
 
 ```{r}
-forecast<- predict(modelo.precios, n.ahead=50)
-
-U <- forecast$pred + 1.96*forecast$se 
-L <- forecast$pred - 1.96*forecast$se 
-Y <- forecast$pred
-fecha <- tk_index(sp)
-fecha2 <- fecha[1188:1237]
-sp2 <- as.matrix(sp)
-
-plot(fecha,sp2,type="l",col="black")
-lines(fecha2,U, col="red",lty=2)
-lines(fecha2,L, col="red",lty=2)
-lines(fecha2,Y, col="blue",type="l")
+forecast<- forecast(modelo.precios, h=50)
+plot(forecast)
 
 ```
 
 **Retornos**
 
 ```{r}
-forecast<- predict(modelo.retornos, n.ahead=50)
-
-U <- forecast$pred + 1.96*forecast$se 
-L <- forecast$pred - 1.96*forecast$se 
-Y <- forecast$pred
-fecha <- tk_index(ret)
-fecha2 <- fecha[1188:1237]
-ret2 <- as.matrix(ret)
-
-plot(fecha,ret2,type="l",col="black")
-lines(fecha2,U, col="red",lty=2)
-lines(fecha2,L, col="red",lty=2)
-lines(fecha2,Y, col="blue",type="l")
+forecastret<- forecast(modelo.retornos, h=50)
+plot(forecastret)
 
 ```
 
@@ -742,14 +726,14 @@ summary(Modelo)
 Obtenemos el pronóstico de la varianza del modelo y estandarizamos los residuales del modelo en media:
 
 ```{r}
-m <- nrow(ret)
+t <- nrow(ret)
 res.garch <- fitted.values(Modelo)
-res.garch <- res.garch[2:m,1]
-res <- res[2:m]
+res.garch <- res.garch[2:t,1]
+res <- res[2:t]
 
 res.est <- res/res.garch
 ```
-4. Realizamos pruebas de bondad de ajuste sobre los nuevos residuales
+4. Realizamos pruebas de bondad de ajuste sobre los nuevos residuales:
 
 ```{r}
 ArchTest(res.est, lag=12)
@@ -762,21 +746,21 @@ Acf(res.est^2, lag=24)
 pacf(res.est^2, lag=24)
 ```
 
-5. Por último, graficamos las tres varianzas que estimamos
+5. Por último, graficamos las tres varianzas que estimamos:
 
 ```{r}
 fecha <- tk_index(ret)
-fecha <- fecha[2:m]
+fecha <- fecha[2:t]
 
-sp.volh2 <- as.matrix(sp.volh[2:m,1])
-sp.volRM2 <- sqrt(sp.volRM[2:m,1])
+sp.volh2 <- as.matrix(sp.volh[2:t,1])
+sp.volRM2 <- sqrt(sp.volRM[2:t,1])
 sp.volGARCH <- res.garch
 
-vol     <- matrix(,m-1,4)
+vol     <- matrix(,t-1,4)
 vol[,1] <- sp.volh2
 vol[,2] <- sp.volRM2
 vol[,3] <- sp.volGARCH
-vol[,4] <- as.matrix(sp[2:m,])
+vol[,4] <- as.matrix(sp[2:t,])
 
 colnames(vol) <- c("VolHist", "VolRM", "VolGARCH", "SP500")
 x= as.data.frame(vol)
@@ -784,7 +768,7 @@ x= as.data.frame(vol)
 graf <- ggplot(x,aes(x=fecha,y=VolHist)) + 
         geom_line(aes(y=VolHist), size = 0.25, col="red") +
         geom_line(aes(y=VolRM), size = 0.25, col="blue") +
-        geom_line(aes(y=VolGARCH), size = 0.25, col="azure4") +             ylab('Volatilidad')+ theme_minimal() + theme(text = element_text(size=10), axis.text.x = element_text(size=10),axis.text.y = element_text(size=10))
+        geom_line(aes(y=VolGARCH), size = 0.25, col="azure4") +             ylab('Volatilidad')+ theme_minimal() + theme(text = element_text(size=10), axis.text.x = element_text(size=10),axis.text.y = element_text(size=10)) 
         graf
 
 ```
